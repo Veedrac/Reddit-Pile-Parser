@@ -29,26 +29,23 @@ COMMENT_KEYS = (
 )
 
 def process_thread(thread):
-    *comments, submission = sorted(thread, key=lambda post: post[0])
+    *comments, submission = sorted(thread, key=len)
     comments
 
-    if submission[0] != 0:
+    if len(submission) != len(SUBMISSION_KEYS):
         # These comments are for an older submission
         return None
 
-    submission = dict(zip(SUBMISSION_KEYS, submission[1:]))
+    submission = dict(zip(SUBMISSION_KEYS, submission))
+    comments = [dict(zip(COMMENT_KEYS, comment)) for comment in comments]
 
     comments_by_parent = {}
     for comment in comments:
-        comment = dict(zip(COMMENT_KEYS, comment[1:]))
-        comments_by_parent.setdefault(comment["parent_id"], []).append(("t1_" + comment["id"], comment))
+        comments_by_parent.setdefault(comment["parent_id"], []).append(comment)
 
-    id_queue = [(submission["id"], submission)]
-    while id_queue:
-        post_id, post = id_queue.pop()
-        children = comments_by_parent.get(post_id, ())
-        post["children"] = children
-        id_queue.extend(children)
+    submission["children"] = comments_by_parent.get(submission["id"], [])
+    for comment in comments:
+        comment["children"] = comments_by_parent.get("t1_" + comment["id"], [])
 
     return submission
 
